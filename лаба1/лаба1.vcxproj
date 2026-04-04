@@ -138,6 +138,9 @@
     <ClCompile Include="glew-2.1.0\src\glew.c" />
     <ClCompile Include="лаба1.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="LIB.h" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

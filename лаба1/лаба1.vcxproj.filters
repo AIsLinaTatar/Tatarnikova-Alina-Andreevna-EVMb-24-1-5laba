@@ -20,4 +20,9 @@
     </ClCompile>
     <ClCompile Include="glew-2.1.0\src\glew.c" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="LIB.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+  </ItemGroup>
 </Project>
