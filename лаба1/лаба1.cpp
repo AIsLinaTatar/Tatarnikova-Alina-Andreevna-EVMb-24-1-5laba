@@ -7,9 +7,11 @@
 #include "stdlib.h"
 #include "cmath"
 #include "LIB.h"
-#include "glm.hpp"
+#include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/type_ptr.hpp"
+#include "Model.h"
+
 
 glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
@@ -28,7 +30,11 @@ float sensitivity = 0.1f;
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
-float vertex[] = {
+float rotationAngle = 0.0f;
+float rotationSpeed = 50.0f;
+glm::vec3 diagonalAxis = glm::normalize(glm::vec3(1.0f, 1.0f, 1.0f));
+
+/*float vertex[] = {
     0.0, 0.5, 0.0,
     0.25, 0.0, 0.0,
     -0.25, 0, 0.0,
@@ -48,7 +54,7 @@ GLuint indices[] = {
     6, 7, 8,
     9, 10, 11
 
-};
+};*/
 
 void processInput(GLFWwindow* window);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -83,8 +89,8 @@ int main() {
         fprintf(stderr, "Error: %s\n", glewGetErrorString(ret));
         return 1;
     }
-
-    GLuint VBO, VAO, EBO;
+    
+    /*GLuint VBO, VAO, EBO;
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
     glGenBuffers(1, &EBO);
@@ -101,7 +107,7 @@ int main() {
 
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);*/
 
     const char* vert_shader =
         "#version 410 core\n"
@@ -131,6 +137,7 @@ int main() {
     glCompileShader(frag_Shader);*/
 
     GLuint shader_Program = createShaderProgram(vert_shader, frag_shader);
+    Model ourRTC("Cube.obj");
     GLint modelLoc = glGetUniformLocation(shader_Program, "model");
     GLint viewLoc = glGetUniformLocation(shader_Program, "view");
     GLint projLoc = glGetUniformLocation(shader_Program, "projection");
@@ -176,6 +183,11 @@ int main() {
         float aspect = (float)width / (float)height;
         glm::mat4 projection = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 100.0f);
 
+        rotationAngle += rotationSpeed * deltaTime;
+        if (rotationAngle > 360.0f) rotationAngle -= 360.0f;
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::rotate(model, glm::radians(rotationAngle), diagonalAxis);
+
         glUseProgram(shader_Program);
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
@@ -187,8 +199,7 @@ int main() {
         float b = (sinf(timeValue + 4.0f) + 1.0f) / 2.0f;
         glUniform4f(colorLoc, r, g, b, 1.0);
 
-        glBindVertexArray(VAO);
-        glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
+        ourRTC.Draw();
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
