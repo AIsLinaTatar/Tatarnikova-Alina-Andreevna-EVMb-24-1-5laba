@@ -84,6 +84,8 @@ int main() {
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glewExperimental = GL_TRUE;
 
+    glEnable(GL_DEPTH_TEST);
+
     GLenum ret = glewInit();
     if (GLEW_OK != ret) {
         fprintf(stderr, "Error: %s\n", glewGetErrorString(ret));
@@ -109,35 +111,16 @@ int main() {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);*/
 
-    const char* vert_shader =
-        "#version 410 core\n"
-        "layout (location=0) in vec3 vp;"
-        "uniform mat4 model;"
-        "uniform mat4 view;"
-        "uniform mat4 projection;"
-        "void main(){"
-        "gl_Position = projection * view * model * vec4(vp, 1.0);"
-        "}";
+    GLuint shader_Program = createShaderProgramFromFiles(
+        "vertex_shader.glsl",
+        "fragment_shader.glsl"
+    );
 
-    const char* frag_shader =
-        "#version 410 core\n"
-        "out vec4 frag_colour;"
-        "uniform vec4 ourColor;"
-        "void main(){"
-        "frag_colour = ourColor;"
-        "}";
-
-    /*GLuint vert_Shader = glCreateShader(GL_VERTEX_SHADER);
-    GLuint frag_Shader = glCreateShader(GL_FRAGMENT_SHADER);
-
-    glShaderSource(vert_Shader, 1, &vert_shader, NULL);
-    glShaderSource(frag_Shader, 1, &frag_shader, NULL);
-
-    glCompileShader(vert_Shader);
-    glCompileShader(frag_Shader);*/
-
-    GLuint shader_Program = createShaderProgram(vert_shader, frag_shader);
-    Model ourRTC("Cube.obj");
+    if (shader_Program == 0) {
+        fprintf(stderr, "Ошибка: не удалось создать программу шейдера!\n");
+        return -1;
+    }
+    Model ourRTC("Lab_3_VAR_1.obj");
     GLint modelLoc = glGetUniformLocation(shader_Program, "model");
     GLint viewLoc = glGetUniformLocation(shader_Program, "view");
     GLint projLoc = glGetUniformLocation(shader_Program, "projection");
@@ -159,7 +142,7 @@ int main() {
         processInput(window);
 
         glClearColor(0.5, 0.2, 0.7, 0);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         /*glBegin(GL_TRIANGLES);
         glVertex2f(0, 0.5);
         glVertex2f(0.25, 0);

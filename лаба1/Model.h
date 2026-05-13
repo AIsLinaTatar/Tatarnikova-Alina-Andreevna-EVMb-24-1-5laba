@@ -40,7 +40,7 @@ private:
 
         directory = path.substr(0, path.find_last_of('/'));
 
-        const aiScene* scene = importer.ReadFile(directory,
+        const aiScene* scene = importer.ReadFile(path,
             aiProcess_CalcTangentSpace |
             aiProcess_Triangulate |
             aiProcess_JoinIdenticalVertices |
