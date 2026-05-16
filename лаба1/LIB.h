@@ -16,23 +16,7 @@ void setUniformVec2(GLuint program, const char* name, float v0, float v1);
 void setUniformVec3(GLuint program, const char* name, float v0, float v1, float v2);
 void setUniformVec4(GLuint program, const char* name, float v0, float v1, float v2, float v3);
 
-GLuint compileShader(const char* source, GLenum type, const char* typeName) {
-    GLuint shader = glCreateShader(type);
-    glShaderSource(shader, 1, &source, NULL);
-    glCompileShader(shader);
-
-    GLint success;
-    GLchar infoLog[1024];
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-    if (!success) {
-        glGetShaderInfoLog(shader, 1024, NULL, infoLog);
-        std::cout << "ERROR::SHADER_COMPILATION_ERROR of type: " << typeName << "\n" << infoLog << "\n";
-    }
-
-    return shader;
-}
-
-std::string readShaderFile(const char* filePath) {
+inline std::string readShaderFile(const char* filePath) {
     std::string content;
     std::ifstream fileStream(filePath, std::ios::in);
 
@@ -49,7 +33,23 @@ std::string readShaderFile(const char* filePath) {
     return content;
 }
 
-GLuint createShaderProgramFromFiles(const char* vertexPath, const char* fragmentPath) {
+inline GLuint compileShader(const char* source, GLenum type, const char* typeName) {
+    GLuint shader = glCreateShader(type);
+    glShaderSource(shader, 1, &source, NULL);
+    glCompileShader(shader);
+
+    GLint success;
+    GLchar infoLog[1024];
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        glGetShaderInfoLog(shader, 1024, NULL, infoLog);
+        std::cout << "ERROR::SHADER_COMPILATION_ERROR of type: " << typeName << "\n" << infoLog << "\n";
+    }
+
+    return shader;
+}
+
+inline GLuint createShaderProgramFromFiles(const char* vertexPath, const char* fragmentPath) {
     std::string vertexCode = readShaderFile(vertexPath);
     std::string fragmentCode = readShaderFile(fragmentPath);
 
@@ -80,7 +80,7 @@ GLuint createShaderProgramFromFiles(const char* vertexPath, const char* fragment
     return program;
 }
 
-GLuint createShaderProgram(const char* vertexCode, const char* fragmentCode) {
+inline GLuint createShaderProgram(const char* vertexCode, const char* fragmentCode) {
     GLuint vertexShader = compileShader(vertexCode, GL_VERTEX_SHADER, "VERTEX");
     GLuint fragmentShader = compileShader(fragmentCode, GL_FRAGMENT_SHADER, "FRAGMENT");
 
@@ -103,27 +103,27 @@ GLuint createShaderProgram(const char* vertexCode, const char* fragmentCode) {
     return program;
 }
 
-void setUniformFloat(GLuint program, const char* name, float v0) {
+inline void setUniformFloat(GLuint program, const char* name, float v0) {
     GLint location = glGetUniformLocation(program, name);
     glUniform1f(location, v0);
 }
 
-void setUniformInt(GLuint program, const char* name, int v0) {
+inline void setUniformInt(GLuint program, const char* name, int v0) {
     GLint location = glGetUniformLocation(program, name);
     glUniform1i(location, v0);
 }
 
-void setUniformVec2(GLuint program, const char* name, float v0, float v1) {
+inline void setUniformVec2(GLuint program, const char* name, float v0, float v1) {
     GLint location = glGetUniformLocation(program, name);
     glUniform2f(location, v0, v1);
 }
 
-void setUniformVec3(GLuint program, const char* name, float v0, float v1, float v2) {
+inline void setUniformVec3(GLuint program, const char* name, float v0, float v1, float v2) {
     GLint location = glGetUniformLocation(program, name);
     glUniform3f(location, v0, v1, v2);
 }
 
-void setUniformVec4(GLuint program, const char* name, float v0, float v1, float v2, float v3) {
+inline void setUniformVec4(GLuint program, const char* name, float v0, float v1, float v2, float v3) {
     GLint location = glGetUniformLocation(program, name);
     glUniform4f(location, v0, v1, v2, v3);
 }

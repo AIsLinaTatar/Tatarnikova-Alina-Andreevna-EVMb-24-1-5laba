@@ -31,7 +31,7 @@ public:
         for (int i = 0; i < meshes.size(); i++) {
             meshes[i].Draw();
         }
-            
+
     }
 
 private:
@@ -49,7 +49,8 @@ private:
         if (nullptr == scene) {
             fprintf(stderr, "Error ASSIMP:: %s\n", importer.GetErrorString());
         }
-               processNode(scene->mRootNode, scene);
+        processNode(scene->mRootNode, scene);
+        return;
     }
 
     void processNode(aiNode* node, const aiScene* scene) {
@@ -74,18 +75,18 @@ private:
             vector.z = mesh->mVertices[i].z;
             vert_buff.Position = vector;
 
-            if(mesh->HasNormals()) {
+            if (mesh->HasNormals()) {
                 vector.x = mesh->mNormals[i].x;
                 vector.y = mesh->mNormals[i].y;
                 vector.z = mesh->mNormals[i].z;
                 vert_buff.Normal = vector;
-             }
+            }
 
             vertices.push_back(vert_buff);
         }
 
         for (int i = 0; i < mesh->mNumFaces; i++) {
-           
+
             aiFace face = mesh->mFaces[i];
 
             for (int j = 0; j < face.mNumIndices; j++) {

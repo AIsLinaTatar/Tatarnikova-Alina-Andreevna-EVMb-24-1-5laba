@@ -120,11 +120,23 @@ int main() {
         fprintf(stderr, "Ошибка: не удалось создать программу шейдера!\n");
         return -1;
     }
-    Model ourRTC("Lab_3_VAR_1.obj");
+   
     GLint modelLoc = glGetUniformLocation(shader_Program, "model");
     GLint viewLoc = glGetUniformLocation(shader_Program, "view");
     GLint projLoc = glGetUniformLocation(shader_Program, "projection");
-    GLint colorLoc = glGetUniformLocation(shader_Program, "ourColor");
+    GLint viewPosLoc = glGetUniformLocation(shader_Program, "viewPos");
+
+    GLint materialAmbientLoc = glGetUniformLocation(shader_Program, "material.ambient");
+    GLint materialDiffuseLoc = glGetUniformLocation(shader_Program, "material.diffuse");
+    GLint materialSpecularLoc = glGetUniformLocation(shader_Program, "material.specular");
+    GLint materialShininessLoc = glGetUniformLocation(shader_Program, "material.shininess");
+
+    GLint lightPositionLoc = glGetUniformLocation(shader_Program, "light.position");
+    GLint lightAmbientLoc = glGetUniformLocation(shader_Program, "light.ambient");
+    GLint lightDiffuseLoc = glGetUniformLocation(shader_Program, "light.diffuse");
+    GLint lightSpecularLoc = glGetUniformLocation(shader_Program, "light.specular");
+
+ Model ourRTC("Lab_3_VAR_1.obj");
 
     glm::mat4 model = glm::mat4(1.0f);
 
@@ -172,15 +184,27 @@ int main() {
         model = glm::rotate(model, glm::radians(rotationAngle), diagonalAxis);
 
         glUseProgram(shader_Program);
+
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+        glUniform3f(viewPosLoc, cameraPos.x, cameraPos.y, cameraPos.z);
 
         float timeValue = (float)glfwGetTime();
         float r = (sinf(timeValue) + 1.0f) / 2.0f;
         float g = (sinf(timeValue + 2.0f) + 1.0f) / 2.0f;
         float b = (sinf(timeValue + 4.0f) + 1.0f) / 2.0f;
-        glUniform4f(colorLoc, r, g, b, 1.0);
+
+        glUniform3f(materialAmbientLoc, r * 0.3f, g * 0.3f, b * 0.3f);
+        glUniform3f(materialDiffuseLoc, r, g, b);
+        glUniform3f(materialSpecularLoc, 0.5f, 0.5f, 0.5f);
+        glUniform1f(materialShininessLoc, 32.0f);
+
+        glUniform3f(lightPositionLoc, 2.0f, 3.0f, 4.0f);
+        glUniform3f(lightAmbientLoc, 0.2f, 0.2f, 0.2f);
+        glUniform3f(lightDiffuseLoc, 0.8f, 0.8f, 0.8f);
+        glUniform3f(lightSpecularLoc, 1.0f, 1.0f, 1.0f);
 
         ourRTC.Draw();
         glfwSwapBuffers(window);
