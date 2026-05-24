@@ -34,6 +34,13 @@ public:
 
     }
 
+    void DrawPart(int partIndex, GLuint shaderProgram, glm::mat4& modelMatrix) {
+        if (partIndex >= 0 && partIndex < meshes.size()) {
+            GLint modelLoc = glGetUniformLocation(shaderProgram, "model");
+            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMatrix));
+            meshes[partIndex].Draw();
+        }
+    }
 private:
     void loadModel(string const& path) {
         Assimp::Importer importer;
@@ -98,3 +105,4 @@ private:
 };
 
 #endif
+

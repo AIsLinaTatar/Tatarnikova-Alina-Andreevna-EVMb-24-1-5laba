@@ -11,55 +11,57 @@
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/type_ptr.hpp"
 #include "Model.h"
+#include <windows.h>
 
-
-glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+glm::vec3 cameraPos = glm::vec3(3.0f, 3.0f, 5.0f);
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
-float yaw = -90.0f;
-float pitch = 0.0f;
-
-float lastX = 256.0f;
-float lastY = 256.0f;
+float yaw = -90.0f, pitch = 0.0f;
+float lastX = 400, lastY = 300;
 bool firstMouse = true;
+float deltaTime = 0.0f, lastFrame = 0.0f;
 
-float cameraSpeed = 2.5f;
-float sensitivity = 0.1f;
+void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
+    if (firstMouse) {
+        lastX = xpos; lastY = ypos; firstMouse = false;
+    }
+    float xoffset = xpos - lastX;
+    float yoffset = lastY - ypos;
+    lastX = xpos; lastY = ypos;
+    xoffset *= 0.1f; yoffset *= 0.1f;
+    yaw += xoffset; pitch += yoffset;
+    if (pitch > 89.0f) pitch = 89.0f;
+    if (pitch < -89.0f) pitch = -89.0f;
+    glm::vec3 dir;
+    dir.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+    dir.y = sin(glm::radians(pitch));
+    dir.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+    cameraFront = glm::normalize(dir);
+}
 
-float deltaTime = 0.0f;
-float lastFrame = 0.0f;
+void processInput(GLFWwindow* window, float deltaTime) {
+    float speed = 2.5f * deltaTime;
+    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+        cameraPos += speed * cameraFront;
+    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+        cameraPos -= speed * cameraFront;
+    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+        cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * speed;
+    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+        cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * speed;
+}
 
-float rotationAngle = 0.0f;
-float rotationSpeed = 50.0f;
-glm::vec3 diagonalAxis = glm::normalize(glm::vec3(1.0f, 1.0f, 1.0f));
+glm::vec3 centerBase = glm::vec3(0.000000f, -0.486263f, 1.326860f);
+glm::vec3 centerArm = glm::vec3(0.2279f, 0.130384f, 0.51433f);
+glm::vec3 centerTube = glm::vec3(0.000000f, 0.536150f, 2.096110f);
 
-/*float vertex[] = {
-    0.0, 0.5, 0.0,
-    0.25, 0.0, 0.0,
-    -0.25, 0, 0.0,
-    0.5, 0, 0.0,
-    0, 0.25, 0.0,
-    0, -0.25, 0.0,
-    0, -0.5, 0.0,
-    0.25, 0, 0.0,
-    -0.25, 0, 0.0,
-    -0.5, 0, 0.0,
-    0, 0.25, 0.0,
-    0.0, -0.25, 0.0 };
-
-GLuint indices[] = {
-    0, 1, 2,
-    3, 4, 5,
-    6, 7, 8,
-    9, 10, 11
-
-};*/
-
-void processInput(GLFWwindow* window);
-void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+float baseRotate = 0.0f;
+float armPitch = 0.0f;
+float tubeShiftZ = 0.0f;
 
 int main() {
+    SetConsoleOutputCP(1251);
 
     if (!glfwInit()) {
         fprintf(stderr, "ERROR: could not start GLFW3.\n");
@@ -72,7 +74,7 @@ int main() {
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     GLFWwindow* window;
-    window = glfwCreateWindow(512, 512, "Mainwindow", NULL, NULL);
+    window = glfwCreateWindow(800, 600, "Lab7 Variant 19", NULL, NULL);
 
     if (!window) {
         glfwTerminate();
@@ -91,25 +93,6 @@ int main() {
         fprintf(stderr, "Error: %s\n", glewGetErrorString(ret));
         return 1;
     }
-    
-    /*GLuint VBO, VAO, EBO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
-
-    glBindVertexArray(VAO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertex), vertex, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
-    glEnableVertexAttribArray(0);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);*/
 
     GLuint shader_Program = createShaderProgramFromFiles(
         "vertex_shader.glsl",
@@ -120,93 +103,89 @@ int main() {
         fprintf(stderr, "Ошибка: не удалось создать программу шейдера!\n");
         return -1;
     }
-   
-    GLint modelLoc = glGetUniformLocation(shader_Program, "model");
-    GLint viewLoc = glGetUniformLocation(shader_Program, "view");
-    GLint projLoc = glGetUniformLocation(shader_Program, "projection");
-    GLint viewPosLoc = glGetUniformLocation(shader_Program, "viewPos");
 
-    GLint materialAmbientLoc = glGetUniformLocation(shader_Program, "material.ambient");
-    GLint materialDiffuseLoc = glGetUniformLocation(shader_Program, "material.diffuse");
-    GLint materialSpecularLoc = glGetUniformLocation(shader_Program, "material.specular");
-    GLint materialShininessLoc = glGetUniformLocation(shader_Program, "material.shininess");
+    Model ourRTC("Lab_3_VAR_1.obj");
 
-    GLint lightPositionLoc = glGetUniformLocation(shader_Program, "light.position");
-    GLint lightAmbientLoc = glGetUniformLocation(shader_Program, "light.ambient");
-    GLint lightDiffuseLoc = glGetUniformLocation(shader_Program, "light.diffuse");
-    GLint lightSpecularLoc = glGetUniformLocation(shader_Program, "light.specular");
+    glm::vec3 lightPos = glm::vec3(2.0f, 3.0f, 4.0f);
+    glm::vec3 lightAmbient = glm::vec3(0.2f, 0.2f, 0.2f);
+    glm::vec3 lightDiffuse = glm::vec3(0.8f, 0.8f, 0.8f);
+    glm::vec3 lightSpecular = glm::vec3(1.0f, 1.0f, 1.0f);
 
- Model ourRTC("Lab_3_VAR_1.obj");
-
-    glm::mat4 model = glm::mat4(1.0f);
-
-    /*glAttachShader(shader_Program, vert_Shader);
-    glAttachShader(shader_Program, frag_Shader);
-
-    glLinkProgram(shader_Program);*/
+    glm::vec3 materialSpecular = glm::vec3(0.5f, 0.5f, 0.5f);
+    float shininess = 32.0f;
 
     while (!glfwWindowShouldClose(window)) {
+        float now = (float)glfwGetTime();
+        deltaTime = now - lastFrame;
+        lastFrame = now;
+        float angleSpeed = 50.0f * deltaTime;
 
-        float currentFrame = (float)glfwGetTime();
-        deltaTime = currentFrame - lastFrame;
-        lastFrame = currentFrame;
+        processInput(window, deltaTime);
 
-        processInput(window);
+        if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) baseRotate += angleSpeed;
+        if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) baseRotate -= angleSpeed;
+        if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) armPitch += angleSpeed;
+        if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) armPitch -= angleSpeed;
+        if (glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS) tubeShiftZ += 2.5f * deltaTime;
+        if (glfwGetKey(window, GLFW_KEY_6) == GLFW_PRESS) tubeShiftZ -= 2.5f * deltaTime;
+        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) glfwSetWindowShouldClose(window, true);
 
-        glClearColor(0.5, 0.2, 0.7, 0);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        /*glBegin(GL_TRIANGLES);
-        glVertex2f(0, 0.5);
-        glVertex2f(0.25, 0);
-        glVertex2f(-0.25, 0);
-        glVertex2f(0.5, 0);
-        glVertex2f(0, 0.25);
-        glVertex2f(0, -0.25);
-        glVertex2f(0, -0.5);
-        glVertex2f(0.25, 0);
-        glVertex2f(-0.25, 0);
-        glVertex2f(-0.5, 0);
-        glVertex2f(0, 0.25);
-        glVertex2f(0, -0.25);
-        glColor3f(1.0, 1.0, 1.0);
-        glEnd();*/
+        if (armPitch > 30.0f) armPitch = 30.0f;
+        if (armPitch < -10.0f) armPitch = -10.0f;
+        if (tubeShiftZ < -0.5f) tubeShiftZ = -0.5f;
+        if (tubeShiftZ > 0.0f) tubeShiftZ = 0.0f;
 
+        glm::mat4 baseMatrix = glm::mat4(1.0f);
+        baseMatrix = glm::translate(baseMatrix, centerBase);
+        baseMatrix = glm::rotate(baseMatrix, glm::radians(baseRotate), glm::vec3(0, 1, 0));
+        baseMatrix = glm::translate(baseMatrix, -centerBase);
+
+        glm::mat4 armMatrix = baseMatrix;
+        armMatrix = glm::translate(armMatrix, centerArm);
+        armMatrix = glm::rotate(armMatrix, glm::radians(armPitch), glm::vec3(0, 1, 0));
+        armMatrix = glm::translate(armMatrix, -centerArm);
+
+        glm::mat4 tubeMatrix = armMatrix;
+        tubeMatrix = glm::translate(tubeMatrix, centerTube);
+        tubeMatrix = glm::translate(tubeMatrix, glm::vec3(0, 0, tubeShiftZ));
+        tubeMatrix = glm::translate(tubeMatrix, -centerTube);
+
+        glm::mat4 projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
         glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
 
-        int width, height;
-        glfwGetFramebufferSize(window, &width, &height);
-        float aspect = (float)width / (float)height;
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 100.0f);
-
-        rotationAngle += rotationSpeed * deltaTime;
-        if (rotationAngle > 360.0f) rotationAngle -= 360.0f;
-        glm::mat4 model = glm::mat4(1.0f);
-        model = glm::rotate(model, glm::radians(rotationAngle), diagonalAxis);
+        glClearColor(0.5f, 0.2f, 0.7f, 0.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glUseProgram(shader_Program);
 
-        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-        glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+        glUniformMatrix4fv(glGetUniformLocation(shader_Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+        glUniformMatrix4fv(glGetUniformLocation(shader_Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
 
-        glUniform3f(viewPosLoc, cameraPos.x, cameraPos.y, cameraPos.z);
+        glUniform3fv(glGetUniformLocation(shader_Program, "light.position"), 1, glm::value_ptr(lightPos));
+        glUniform3fv(glGetUniformLocation(shader_Program, "light.ambient"), 1, glm::value_ptr(lightAmbient));
+        glUniform3fv(glGetUniformLocation(shader_Program, "light.diffuse"), 1, glm::value_ptr(lightDiffuse));
+        glUniform3fv(glGetUniformLocation(shader_Program, "light.specular"), 1, glm::value_ptr(lightSpecular));
 
-        float timeValue = (float)glfwGetTime();
+        glUniform3fv(glGetUniformLocation(shader_Program, "viewPos"), 1, glm::value_ptr(cameraPos));
+
+        glUniform3fv(glGetUniformLocation(shader_Program, "material.specular"), 1, glm::value_ptr(materialSpecular));
+        glUniform1f(glGetUniformLocation(shader_Program, "material.shininess"), shininess);
+
+        float timeValue = now;
         float r = (sinf(timeValue) + 1.0f) / 2.0f;
         float g = (sinf(timeValue + 2.0f) + 1.0f) / 2.0f;
         float b = (sinf(timeValue + 4.0f) + 1.0f) / 2.0f;
 
-        glUniform3f(materialAmbientLoc, r * 0.3f, g * 0.3f, b * 0.3f);
-        glUniform3f(materialDiffuseLoc, r, g, b);
-        glUniform3f(materialSpecularLoc, 0.5f, 0.5f, 0.5f);
-        glUniform1f(materialShininessLoc, 32.0f);
+        glm::vec3 materialAmbient = glm::vec3(r * 0.3f, g * 0.3f, b * 0.3f);
+        glm::vec3 materialDiffuse = glm::vec3(r, g, b);
 
-        glUniform3f(lightPositionLoc, 2.0f, 3.0f, 4.0f);
-        glUniform3f(lightAmbientLoc, 0.2f, 0.2f, 0.2f);
-        glUniform3f(lightDiffuseLoc, 0.8f, 0.8f, 0.8f);
-        glUniform3f(lightSpecularLoc, 1.0f, 1.0f, 1.0f);
+        glUniform3fv(glGetUniformLocation(shader_Program, "material.ambient"), 1, glm::value_ptr(materialAmbient));
+        glUniform3fv(glGetUniformLocation(shader_Program, "material.diffuse"), 1, glm::value_ptr(materialDiffuse));
 
-        ourRTC.Draw();
+        ourRTC.DrawPart(0, shader_Program, baseMatrix);
+        ourRTC.DrawPart(1, shader_Program, armMatrix);
+        ourRTC.DrawPart(2, shader_Program, tubeMatrix);
+
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
@@ -221,42 +200,3 @@ int main() {
     return 0;
 }
 
-void processInput(GLFWwindow* window) {
-    float speed = cameraSpeed * deltaTime;
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        cameraPos += speed * cameraFront;
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        cameraPos -= speed * cameraFront;
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * speed;
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * speed;
-}
-
-void mouse_callback(GLFWwindow* window, double xposIn, double yposIn) {
-    float xpos = static_cast<float>(xposIn);
-    float ypos = static_cast<float>(yposIn);
-
-    if (firstMouse) {
-        lastX = xpos;
-        lastY = ypos;
-        firstMouse = false;
-    }
-
-    float xoffset = (xpos - lastX) * sensitivity;
-    float yoffset = (lastY - ypos) * sensitivity;   
-    lastX = xpos;
-    lastY = ypos;
-
-    yaw += xoffset;
-    pitch += yoffset;
-
-    if (pitch > 89.0f)  pitch = 89.0f;
-    if (pitch < -89.0f) pitch = -89.0f;
-
-    glm::vec3 direction;
-    direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-    direction.y = sin(glm::radians(pitch));
-    direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-    cameraFront = glm::normalize(direction);
-}

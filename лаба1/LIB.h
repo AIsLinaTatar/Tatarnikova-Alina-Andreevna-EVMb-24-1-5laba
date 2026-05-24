@@ -127,3 +127,4 @@ inline void setUniformVec4(GLuint program, const char* name, float v0, float v1,
     GLint location = glGetUniformLocation(program, name);
     glUniform4f(location, v0, v1, v2, v3);
 }
+
